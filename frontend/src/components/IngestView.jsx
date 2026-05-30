@@ -7,6 +7,7 @@ export default function IngestView({ chunkSize, chunkOverlap, documents, setDocu
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [pipelineData, setPipelineData] = useState(null);
+  const [activeStep, setActiveStep] = useState('loader'); // 'loader' | 'splitter' | 'embeddings' | 'vector_store'
   const fileInputRef = useRef(null);
 
   const handleDragOver = (e) => {
@@ -221,170 +222,228 @@ export default function IngestView({ chunkSize, chunkOverlap, documents, setDocu
           LangChain Ingestion Pipeline Inspector
         </h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-          This diagram illustrates the active LangChain extraction and indexing pipeline. It maps documents from local formats into vectors inside ChromaDB.
+          This diagram illustrates the active LangChain extraction and indexing pipeline. Click on any step to inspect real-time telemetry from raw format loading to ChromaDB vectorization.
         </p>
 
-        <div className="pipeline-flow">
-          {/* Step 1: Loader */}
-          <div className={`pipeline-step ${pipelineData ? 'step-active' : ''}`}>
-            <div className="step-badge">1. Loader</div>
-            <div className="step-card">
-              <div className="step-icon">
+        <div className="pipeline-stepper-container">
+          {/* Stepper Flow Map */}
+          <div className="pipeline-stepper-flow">
+            {/* Track Line behind circles */}
+            <div className="pipeline-stepper-track" />
+            <div 
+              className="pipeline-stepper-track-active" 
+              style={{ 
+                width: pipelineData 
+                  ? (activeStep === 'loader' ? '0%' 
+                     : activeStep === 'splitter' ? '33%' 
+                     : activeStep === 'embeddings' ? '66%' 
+                     : '100%') 
+                  : '0%' 
+              }} 
+            />
+
+            {/* Step 1: Loader */}
+            <div 
+              className={`stepper-node-wrapper ${pipelineData ? 'node-ready' : ''} ${activeStep === 'loader' ? 'node-selected' : ''}`}
+              onClick={() => setActiveStep('loader')}
+            >
+              <div className="stepper-circle">
                 <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
               </div>
-              <h4>{pipelineData ? pipelineData.loader.name : 'Auto-detecting Loader'}</h4>
-              <p className="step-desc">
-                {pipelineData ? pipelineData.loader.description : 'Detects and parses raw documents into standard LangChain Document objects.'}
-              </p>
-              <div className="step-telemetry">
-                <span className="telemetry-label">Status:</span>
-                <span className={`telemetry-value ${pipelineData ? 'text-cyan' : 'text-muted'}`}>
-                  {pipelineData ? 'Ready / Success' : 'Idle'}
-                </span>
-                {pipelineData && (
-                  <>
-                    <div style={{ marginTop: '0.25rem' }}>
-                      <span className="telemetry-label">Type: </span>
-                      <span className="telemetry-value font-mono">{pipelineData.filename.endsWith('.pdf') ? 'PDF Document' : 'TXT Document'}</span>
-                    </div>
-                    <div>
-                      <span className="telemetry-label">Pages: </span>
-                      <span className="telemetry-value">{pipelineData.num_pages}</span>
-                    </div>
-                  </>
-                )}
-              </div>
+              <span className="stepper-label">1. Loader</span>
             </div>
-          </div>
 
-          <div className="pipeline-connector">
-            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </div>
-
-          {/* Step 2: Splitter */}
-          <div className={`pipeline-step ${pipelineData ? 'step-active' : ''}`}>
-            <div className="step-badge">2. Splitter</div>
-            <div className="step-card">
-              <div className="step-icon">
+            {/* Step 2: Splitter */}
+            <div 
+              className={`stepper-node-wrapper ${pipelineData ? 'node-ready' : ''} ${activeStep === 'splitter' ? 'node-selected' : ''}`}
+              onClick={() => setActiveStep('splitter')}
+            >
+              <div className="stepper-circle">
                 <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-4-4-4 4-4-4-4 4z" />
                   <line x1="9" y1="10" x2="15" y2="10" />
-                  <line x1="9" y1="14" x2="15" y2="14" />
                 </svg>
               </div>
-              <h4>RecursiveCharacterSplitter</h4>
-              <p className="step-desc">
-                {pipelineData ? pipelineData.splitter.description : 'Recursively splits loaded text to preserve sentence structure.'}
-              </p>
-              <div className="step-telemetry">
-                <div>
-                  <span className="telemetry-label">Chunk Size:</span>
-                  <span className="telemetry-value font-mono">{chunkSize}</span>
-                </div>
-                <div>
-                  <span className="telemetry-label">Chunk Overlap:</span>
-                  <span className="telemetry-value font-mono">{chunkOverlap}</span>
-                </div>
-                {pipelineData && (
-                  <div style={{ marginTop: '0.25rem' }}>
-                    <span className="telemetry-label">Generated Chunks: </span>
-                    <span className="telemetry-value text-cyan" style={{ fontWeight: 'bold' }}>{pipelineData.num_chunks}</span>
-                  </div>
-                )}
-                {/* Visual overlap bar */}
-                <div className="overlap-bar-preview" style={{ marginTop: '0.5rem' }}>
-                  <div className="overlap-block" style={{ width: '60%' }}>Chunk A</div>
-                  <div className="overlap-segment" style={{ width: `${Math.min(30, (chunkOverlap / chunkSize) * 100)}%` }}></div>
-                  <div className="overlap-block" style={{ width: '60%', marginLeft: '-10px' }}>Chunk B</div>
-                </div>
-              </div>
+              <span className="stepper-label">2. Splitter</span>
             </div>
-          </div>
 
-          <div className="pipeline-connector">
-            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </div>
-
-          {/* Step 3: Embeddings */}
-          <div className={`pipeline-step ${pipelineData ? 'step-active' : ''}`}>
-            <div className="step-badge">3. Embeddings</div>
-            <div className="step-card">
-              <div className="step-icon">
+            {/* Step 3: Embeddings */}
+            <div 
+              className={`stepper-node-wrapper ${pipelineData ? 'node-ready' : ''} ${activeStep === 'embeddings' ? 'node-selected' : ''}`}
+              onClick={() => setActiveStep('embeddings')}
+            >
+              <div className="stepper-circle">
                 <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                 </svg>
               </div>
-              <h4>Ollama Embeddings</h4>
-              <p className="step-desc">
-                {pipelineData ? pipelineData.embeddings.description : 'Computes numerical representations of tokens using local models.'}
-              </p>
-              <div className="step-telemetry">
-                <div>
-                  <span className="telemetry-label">Model:</span>
-                  <span className="telemetry-value font-mono text-cyan" style={{ fontSize: '0.75rem' }}>nomic-embed-text</span>
-                </div>
-                <div>
-                  <span className="telemetry-label">Dimensions:</span>
-                  <span className="telemetry-value font-mono">768</span>
-                </div>
-                <div>
-                  <span className="telemetry-label">Ollama Host:</span>
-                  <span className="telemetry-value font-mono" style={{ fontSize: '0.75rem' }}>Localhost:11434</span>
-                </div>
-              </div>
+              <span className="stepper-label">3. Embeddings</span>
             </div>
-          </div>
 
-          <div className="pipeline-connector">
-            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </div>
-
-          {/* Step 4: Vector Store */}
-          <div className={`pipeline-step ${pipelineData ? 'step-active' : ''}`}>
-            <div className="step-badge">4. Vector DB</div>
-            <div className="step-card">
-              <div className="step-icon">
+            {/* Step 4: Vector DB */}
+            <div 
+              className={`stepper-node-wrapper ${pipelineData ? 'node-ready' : ''} ${activeStep === 'vector_store' ? 'node-selected' : ''}`}
+              onClick={() => setActiveStep('vector_store')}
+            >
+              <div className="stepper-circle">
                 <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                   <ellipse cx="12" cy="5" rx="9" ry="3" />
                   <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
                   <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
                 </svg>
               </div>
-              <h4>Chroma Vector DB</h4>
-              <p className="step-desc">
-                {pipelineData ? pipelineData.vector_store.description : 'Indexes vectors and original text segments to enable sub-millisecond similarity retrieval.'}
-              </p>
-              <div className="step-telemetry">
-                <div>
-                  <span className="telemetry-label">Collection:</span>
-                  <span className="telemetry-value font-mono" style={{ fontSize: '0.75rem' }}>classical_rag</span>
-                </div>
-                <div>
-                  <span className="telemetry-label">Storage Path:</span>
-                  <span className="telemetry-value font-mono" style={{ fontSize: '0.75rem' }}>./chroma_db</span>
-                </div>
-                {documents.length > 0 && (
-                  <div style={{ marginTop: '0.25rem' }}>
-                    <span className="telemetry-label">Vector Status:</span>
-                    <span className="telemetry-value text-success" style={{ fontWeight: 600 }}>Active Index</span>
-                  </div>
-                )}
-              </div>
+              <span className="stepper-label">4. Vector DB</span>
             </div>
+          </div>
+
+          {/* Stepper Detail Card Pane */}
+          <div className="pipeline-pane-dynamic" key={activeStep}>
+            {activeStep === 'loader' && (
+              <div className={`step-card ${pipelineData ? 'step-active' : ''}`} style={{ borderTop: 'none', borderRadius: '0 0 14px 14px', background: 'rgba(255,255,255,0.015)' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <div className="step-icon">
+                    <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1rem', color: '#fff' }}>{pipelineData ? pipelineData.loader.name : 'Auto-detecting Loader'}</h4>
+                </div>
+                <p className="step-desc" style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  {pipelineData ? pipelineData.loader.description : 'Detects and parses raw documents into standard LangChain Document objects.'}
+                </p>
+                <div className="step-telemetry" style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Status:</span>
+                    <span className={`telemetry-value ${pipelineData ? 'text-cyan' : 'text-muted'}`}>
+                      {pipelineData ? 'Ready / Success' : 'Idle'}
+                    </span>
+                  </div>
+                  {pipelineData && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                        <span className="telemetry-label">Type: </span>
+                        <span className="telemetry-value font-mono">{pipelineData.filename.endsWith('.pdf') ? 'PDF Document' : 'TXT Document'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                        <span className="telemetry-label">Pages: </span>
+                        <span className="telemetry-value">{pipelineData.num_pages}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeStep === 'splitter' && (
+              <div className={`step-card ${pipelineData ? 'step-active' : ''}`} style={{ borderTop: 'none', borderRadius: '0 0 14px 14px', background: 'rgba(255,255,255,0.015)' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <div className="step-icon">
+                    <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-4-4-4 4-4-4-4 4z" />
+                      <line x1="9" y1="10" x2="15" y2="10" />
+                      <line x1="9" y1="14" x2="15" y2="14" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1rem', color: '#fff' }}>RecursiveCharacterSplitter</h4>
+                </div>
+                <p className="step-desc" style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  {pipelineData ? pipelineData.splitter.description : 'Recursively splits loaded text to preserve sentence structure.'}
+                </p>
+                <div className="step-telemetry" style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Chunk Size:</span>
+                    <span className="telemetry-value font-mono">{chunkSize} tokens</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Chunk Overlap:</span>
+                    <span className="telemetry-value font-mono">{chunkOverlap} tokens</span>
+                  </div>
+                  {pipelineData && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                      <span className="telemetry-label">Generated Chunks: </span>
+                      <span className="telemetry-value text-cyan" style={{ fontWeight: 'bold' }}>{pipelineData.num_chunks}</span>
+                    </div>
+                  )}
+                  {/* Visual overlap bar */}
+                  <div className="overlap-bar-preview" style={{ marginTop: '0.8rem' }}>
+                    <div className="overlap-block" style={{ width: '60%' }}>Chunk A</div>
+                    <div className="overlap-segment" style={{ width: `${Math.min(30, (chunkOverlap / chunkSize) * 100)}%` }}></div>
+                    <div className="overlap-block" style={{ width: '60%', marginLeft: '-10px' }}>Chunk B</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeStep === 'embeddings' && (
+              <div className={`step-card ${pipelineData ? 'step-active' : ''}`} style={{ borderTop: 'none', borderRadius: '0 0 14px 14px', background: 'rgba(255,255,255,0.015)' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <div className="step-icon">
+                    <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1rem', color: '#fff' }}>Ollama Embeddings</h4>
+                </div>
+                <p className="step-desc" style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  {pipelineData ? pipelineData.embeddings.description : 'Computes numerical representations of tokens using local models.'}
+                </p>
+                <div className="step-telemetry" style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Model:</span>
+                    <span className="telemetry-value font-mono text-cyan" style={{ fontSize: '0.8rem' }}>nomic-embed-text</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Dimensions:</span>
+                    <span className="telemetry-value font-mono">768</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Ollama Host:</span>
+                    <span className="telemetry-value font-mono" style={{ fontSize: '0.8rem' }}>Localhost:11434</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeStep === 'vector_store' && (
+              <div className={`step-card ${pipelineData ? 'step-active' : ''}`} style={{ borderTop: 'none', borderRadius: '0 0 14px 14px', background: 'rgba(255,255,255,0.015)' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <div className="step-icon">
+                    <svg viewBox="0 0 24 24" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                      <ellipse cx="12" cy="5" rx="9" ry="3" />
+                      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                      <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1rem', color: '#fff' }}>Chroma Vector DB</h4>
+                </div>
+                <p className="step-desc" style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  {pipelineData ? pipelineData.vector_store.description : 'Indexes vectors and original text segments to enable sub-millisecond similarity retrieval.'}
+                </p>
+                <div className="step-telemetry" style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Collection:</span>
+                    <span className="telemetry-value font-mono" style={{ fontSize: '0.8rem' }}>classical_rag</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                    <span className="telemetry-label">Storage Path:</span>
+                    <span className="telemetry-value font-mono" style={{ fontSize: '0.8rem' }}>./chroma_db</span>
+                  </div>
+                  {documents.length > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
+                      <span className="telemetry-label">Vector Status:</span>
+                      <span className="telemetry-value text-success" style={{ fontWeight: 600 }}>Active Index</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>

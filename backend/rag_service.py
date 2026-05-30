@@ -113,18 +113,19 @@ class RAGManager:
         context = "\n\n---\n\n".join(context_parts)
         
         # 2. Setup proper LangChain abstractions
-        prompt_template = """You are a professional legal and document assistant. Use the following pieces of context to answer the question at the end.
+        prompt_file_path = os.path.join(os.path.dirname(__file__), "prompt.md")
+        try:
+            with open(prompt_file_path, "r", encoding="utf-8") as f:
+                prompt_template = f.read().strip()
+        except Exception as e:
+            prompt_template = """You are a professional legal and document assistant. Use the provided context to answer the question at the end.
 If you don't know the answer based on the context provided, just say that the information is not present in the document. Do not try to make up an answer.
-Keep your response structured, precise, and professional.
-
-Context:
-{context}
-
-Question: {question}
-
-Answer:"""
+Keep your response structured, precise, and professional."""
         
-        prompt = ChatPromptTemplate.from_template(prompt_template)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", prompt_template),
+            ("human", "Context:\n{context}\n\nQuestion: {question}\n\nAnswer:")
+        ])
         
         # ChatModel
         chat_model = ChatOllama(
@@ -158,9 +159,9 @@ Answer:"""
                 },
                 "prompt": {
                     "name": "ChatPromptTemplate",
-                    "template": prompt_template,
+                    "template": f"System: {prompt_template}\n\nHuman: Context:\n{{context}}\n\nQuestion: {{question}}\n\nAnswer:",
                     "formatted_prompt": formatted_prompt_str,
-                    "description": "Constructs a structured ChatPromptTemplate injecting local source context and the user query."
+                    "description": "Constructs a structured ChatPromptTemplate with a system prompt and context-injected user query."
                 },
                 "chat_model": {
                     "name": "ChatOllama",

@@ -1073,3 +1073,317 @@ body {
     font-size: 0.75rem;
   }
 }
+
+/* --- STREAMLINED REDESIGN ADDITIONS --- */
+
+/* Sliding Drawer for Settings */
+.drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(5, 7, 16, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 95%;
+  height: 100vh;
+  background: rgba(10, 13, 26, 0.85);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-left: 1px solid var(--border-color);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 2rem;
+}
+
+.settings-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.drawer-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.btn-close-drawer {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-smooth);
+}
+
+.btn-close-drawer:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+/* Configure RAG Header Button */
+.btn-configure-rag {
+  background: rgba(162, 89, 255, 0.08);
+  border: 1px solid rgba(162, 89, 255, 0.2);
+  color: var(--accent-purple);
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  height: 42px;
+}
+
+.btn-configure-rag:hover {
+  background: rgba(162, 89, 255, 0.15);
+  color: #fff;
+  border-color: rgba(162, 89, 255, 0.4);
+  box-shadow: 0 0 15px rgba(162, 89, 255, 0.2);
+}
+
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.page-header-info {
+  flex: 1;
+}
+
+/* Interactive Pipeline Stepper Map */
+.pipeline-stepper-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.pipeline-stepper-flow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.pipeline-stepper-track {
+  position: absolute;
+  left: 12.5%;
+  right: 12.5%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  z-index: 1;
+}
+
+.pipeline-stepper-track-active {
+  position: absolute;
+  left: 12.5%;
+  height: 2px;
+  background: var(--accent-gradient);
+  z-index: 2;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+.stepper-node-wrapper {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.stepper-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #111424;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.stepper-circle svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--text-muted);
+  fill: none;
+  transition: var(--transition-smooth);
+}
+
+.stepper-node-wrapper:hover .stepper-circle {
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Active node state when pipeline is populated */
+.stepper-node-wrapper.node-ready .stepper-circle {
+  border-color: rgba(0, 242, 254, 0.3);
+  background: rgba(0, 242, 254, 0.04);
+}
+
+.stepper-node-wrapper.node-ready .stepper-circle svg {
+  stroke: var(--accent-cyan);
+}
+
+/* Selected active step state */
+.stepper-node-wrapper.node-selected .stepper-circle {
+  border-color: var(--accent-purple) !important;
+  background: rgba(162, 89, 255, 0.15) !important;
+  box-shadow: 0 0 20px rgba(162, 89, 255, 0.4) !important;
+  transform: scale(1.08);
+}
+
+.stepper-node-wrapper.node-selected .stepper-circle svg {
+  stroke: #fff !important;
+  filter: drop-shadow(0 0 5px var(--accent-purple));
+}
+
+.stepper-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.stepper-node-wrapper.node-selected .stepper-label {
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(162, 89, 255, 0.3);
+}
+
+.stepper-node-wrapper.node-ready .stepper-label {
+  color: var(--text-primary);
+}
+
+.pipeline-pane-dynamic {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Collapsible Telemetry for Q&A */
+.telemetry-toggle-area {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.btn-telemetry-toggle {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 1.2rem;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-telemetry-toggle:hover {
+  background: rgba(162, 89, 255, 0.06);
+  border-color: rgba(162, 89, 255, 0.3);
+  color: var(--accent-purple);
+}
+
+.btn-telemetry-toggle.active {
+  background: rgba(162, 89, 255, 0.1);
+  border-color: var(--accent-purple);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(162, 89, 255, 0.15);
+}
+
+.telemetry-collapse-wrapper {
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  opacity: 0;
+  width: 100%;
+}
+
+.telemetry-collapse-wrapper.open {
+  max-height: 1200px;
+  opacity: 1;
+}
+
+.sources-list-sleek {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.source-item-sleek {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: var(--transition-smooth);
+}
+
+.source-item-sleek:hover {
+  border-color: rgba(0, 242, 254, 0.15);
+  background: rgba(0, 242, 254, 0.01);
+}
+

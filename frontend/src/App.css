@@ -841,3 +841,235 @@ body {
     padding: 1.5rem;
   }
 }
+
+/* LangChain Pipeline Visualization & Telemetry Styles */
+
+.pipeline-visualizer-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.pipeline-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 1rem 0;
+  scrollbar-width: thin;
+}
+
+.pipeline-step {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.step-badge {
+  position: absolute;
+  top: -12px;
+  left: 15px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  box-shadow: 0 0 10px rgba(162, 89, 255, 0.4);
+  z-index: 10;
+}
+
+.step-card {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.5rem 1.1rem 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: var(--transition-smooth);
+}
+
+.pipeline-step.step-active .step-card {
+  border-color: rgba(0, 242, 254, 0.25);
+  background: rgba(0, 242, 254, 0.02);
+  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.05);
+}
+
+.step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.pipeline-step.step-active .step-icon {
+  background: rgba(0, 242, 254, 0.1);
+}
+
+.step-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-secondary);
+}
+
+.pipeline-step.step-active .step-icon svg {
+  stroke: var(--accent-cyan);
+  filter: drop-shadow(0 0 4px var(--accent-cyan));
+}
+
+.step-card h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.step-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin: 0;
+  flex: 1;
+}
+
+.step-telemetry {
+  font-size: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-secondary);
+}
+
+.telemetry-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.telemetry-value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pipeline-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.1);
+  padding: 0 0.25rem;
+}
+
+.pipeline-connector svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pipeline-step.step-active + .pipeline-connector {
+  color: rgba(0, 242, 254, 0.4);
+  filter: drop-shadow(0 0 4px rgba(0, 242, 254, 0.3));
+}
+
+/* Dynamic splitter overlap visualization */
+.overlap-bar-preview {
+  display: flex;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 0.6rem;
+  line-height: 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.overlap-block {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.overlap-segment {
+  background: var(--accent-cyan);
+  opacity: 0.7;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+
+.text-cyan {
+  color: var(--accent-cyan) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.font-mono {
+  font-family: monospace !important;
+}
+
+/* LangChain Execution Inspector Tabs */
+
+.inspector-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.inspector-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.inspector-tab-btn.active {
+  color: var(--accent-purple);
+  border-bottom-color: var(--accent-purple);
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(162, 89, 255, 0.2);
+}
+
+.code-tag {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: #f3f4f6;
+  font-family: monospace;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+/* Mobile responsive fixes */
+@media (max-width: 768px) {
+  .pipeline-flow {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .pipeline-connector {
+    transform: rotate(90deg);
+    padding: 0.5rem 0;
+  }
+  .inspector-tabs {
+    flex-wrap: wrap;
+  }
+  .inspector-tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+}

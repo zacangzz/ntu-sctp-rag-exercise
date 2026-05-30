@@ -8,6 +8,8 @@ export default function AskView({ k, documents }) {
   const [lastQuestion, setLastQuestion] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [expandedSources, setExpandedSources] = useState({});
+  const [pipelineData, setPipelineData] = useState(null);
+  const [activeInspectorTab, setActiveInspectorTab] = useState('retriever');
 
   const handleToggleSource = (idx) => {
     setExpandedSources(prev => ({
@@ -26,6 +28,7 @@ export default function AskView({ k, documents }) {
     setSources([]);
     setLastQuestion(question);
     setExpandedSources({});
+    setPipelineData(null);
 
     try {
       const response = await fetch('/api/ask', {
@@ -47,6 +50,7 @@ export default function AskView({ k, documents }) {
       const data = await response.json();
       setAnswer(data.answer);
       setSources(data.sources || []);
+      setPipelineData(data.pipeline);
       setQuestion('');
     } catch (err) {
       console.error(err);
@@ -198,6 +202,171 @@ export default function AskView({ k, documents }) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* LangChain Execution Pipeline Inspector */}
+          {pipelineData && (
+            <div className="pipeline-inspector glass-panel" style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div className="inspector-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-purple)', fontSize: '1.1rem' }}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 4px var(--accent-purple))' }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  LangChain Pipeline Execution Telemetry
+                </h4>
+                <span className="badge-lcel" style={{ background: 'linear-gradient(135deg, var(--accent-purple), #7928CA)', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, color: '#fff', boxShadow: '0 0 10px rgba(121, 40, 202, 0.4)' }}>LCEL Chain</span>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', marginBottom: '1.25rem' }}>
+                Inspect real-time telemetry from each abstracted LangChain component in the active query-retrieval loop.
+              </p>
+
+              {/* Tab navigation */}
+              <div className="inspector-tabs" style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', gap: '0.5rem', paddingBottom: '0.1rem' }}>
+                <button 
+                  type="button"
+                  className={`inspector-tab-btn ${activeInspectorTab === 'retriever' ? 'active' : ''}`}
+                  onClick={() => setActiveInspectorTab('retriever')}
+                >
+                  1. Retriever
+                </button>
+                <button 
+                  type="button"
+                  className={`inspector-tab-btn ${activeInspectorTab === 'prompt' ? 'active' : ''}`}
+                  onClick={() => setActiveInspectorTab('prompt')}
+                >
+                  2. Prompt Template
+                </button>
+                <button 
+                  type="button"
+                  className={`inspector-tab-btn ${activeInspectorTab === 'chat_model' ? 'active' : ''}`}
+                  onClick={() => setActiveInspectorTab('chat_model')}
+                >
+                  3. ChatModel
+                </button>
+                <button 
+                  type="button"
+                  className={`inspector-tab-btn ${activeInspectorTab === 'output_parser' ? 'active' : ''}`}
+                  onClick={() => setActiveInspectorTab('output_parser')}
+                >
+                  4. Output Parser
+                </button>
+              </div>
+
+              {/* Tab Contents */}
+              <div className="inspector-content" style={{ marginTop: '1.25rem' }}>
+                {activeInspectorTab === 'retriever' && (
+                  <div>
+                    <div className="inspector-meta-row" style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                      <span><strong>Class:</strong> <code className="code-tag">{pipelineData.retriever.name}</code></span>
+                      <span><strong>Method:</strong> <code className="code-tag">{pipelineData.retriever.search_type}</code></span>
+                      <span><strong>K:</strong> <code className="code-tag">{pipelineData.retriever.k} chunks</code></span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0' }}>
+                      {pipelineData.retriever.description}
+                    </p>
+                    <div style={{ marginTop: '1rem' }}>
+                      <div className="sources-heading" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Retrieved Document Chunks ({sources.length})</div>
+                      <div className="inspector-sources-grid" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                        {sources.map((src, index) => (
+                          <div className="inspector-source-card" key={index} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--accent-cyan)', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                              <span>Chunk #{index + 1}</span>
+                              <span style={{ color: 'var(--text-secondary)', fontWeight: 'normal' }}>
+                                {src.metadata.source || 'Unknown'} {src.metadata.page !== undefined ? `| Page ${src.metadata.page + 1}` : ''}
+                              </span>
+                            </div>
+                            <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'inherit', margin: 0, maxHeight: '80px', overflowY: 'auto' }}>
+                              {src.content}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeInspectorTab === 'prompt' && (
+                  <div>
+                    <div className="inspector-meta-row" style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                      <span><strong>Class:</strong> <code className="code-tag">{pipelineData.prompt.name}</code></span>
+                      <span><strong>Input variables:</strong> <code className="code-tag">context, question</code></span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0' }}>
+                      {pipelineData.prompt.description}
+                    </p>
+                    <div style={{ marginTop: '1rem' }}>
+                      <div className="sources-heading" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Formatted Prompt Sent to Ollama ChatModel</div>
+                      <pre className="formatted-prompt-viewer" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', whiteSpace: 'pre-wrap', color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '250px', overflowY: 'auto', marginTop: '0.5rem', lineHeight: '1.4' }}>
+                        {pipelineData.prompt.formatted_prompt}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {activeInspectorTab === 'chat_model' && (
+                  <div>
+                    <div className="inspector-meta-row" style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                      <span><strong>Class:</strong> <code className="code-tag">{pipelineData.chat_model.name}</code></span>
+                      <span><strong>Model:</strong> <code className="code-tag">{pipelineData.chat_model.model}</code></span>
+                      <span><strong>Temp:</strong> <code className="code-tag">{pipelineData.chat_model.temperature}</code></span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0' }}>
+                      {pipelineData.chat_model.description}
+                    </p>
+                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', marginTop: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <span className="status-indicator active" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', boxShadow: '0 0 8px #10B981' }}></span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Ollama Server Integration</span>
+                      </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                        <tbody>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '0.5rem 0', color: 'var(--text-secondary)' }}>Host URL</td>
+                            <td style={{ padding: '0.5rem 0', textAlign: 'right', fontFamily: 'monospace' }}>{pipelineData.chat_model.base_url}</td>
+                          </tr>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '0.5rem 0', color: 'var(--text-secondary)' }}>Execution Format</td>
+                            <td style={{ padding: '0.5rem 0', textAlign: 'right' }}>Message Object Sequence (System/User/Assistant)</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '0.5rem 0', color: 'var(--text-secondary)' }}>Streaming Support</td>
+                            <td style={{ padding: '0.5rem 0', textAlign: 'right', color: 'var(--accent-cyan)' }}>Enabled</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {activeInspectorTab === 'output_parser' && (
+                  <div>
+                    <div className="inspector-meta-row" style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                      <span><strong>Class:</strong> <code className="code-tag">{pipelineData.output_parser.name}</code></span>
+                      <span><strong>Output Type:</strong> <code className="code-tag">str</code></span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0' }}>
+                      {pipelineData.output_parser.description}
+                    </p>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                      <div style={{ flex: 1, background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Parsed Output Tokens</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>
+                          {answer.split(/\s+/).length} words
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Output Character Size</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-purple)' }}>
+                          {answer.length} chars
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </section>

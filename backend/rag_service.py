@@ -3,10 +3,10 @@ import shutil
 from typing import List, Dict, Any, Optional
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_community.vectorstores import Chroma
-from langchain_community.llms import Ollama
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 CHROMA_DB_DIR = "./chroma_db"
 COLLECTION_NAME = "classical_rag"
@@ -32,9 +32,10 @@ class RAGManager:
         )
 
     def ingest_file(self, file_path: str, original_filename: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> Dict[str, Any]:
-        """Loads, splits, and embeds a document, saving chunks to ChromaDB."""
+        """Loads, splits, and embeds a document, saving chunks to ChromaDB with telemetry."""
         # 1. Load document
         ext = os.path.splitext(file_path)[1].lower()
+        loader_name = "PyPDFLoader" if ext == ".pdf" else "TextLoader"
         if ext == '.pdf':
             loader = PyPDFLoader(file_path)
         else:
@@ -62,19 +63,43 @@ class RAGManager:
             "num_chunks": len(chunks),
             "num_pages": len(docs) if ext == '.pdf' else 1,
             "chunk_size": chunk_size,
-            "chunk_overlap": chunk_overlap
+            "chunk_overlap": chunk_overlap,
+            "pipeline": {
+                "loader": {
+                    "name": loader_name,
+                    "description": f"Loads {ext.upper()} documents and extracts content page-by-page."
+                },
+                "splitter": {
+                    "name": "RecursiveCharacterTextSplitter",
+                    "chunk_size": chunk_size,
+                    "chunk_overlap": chunk_overlap,
+                    "description": "Splits documents recursively by standard delimiters (\\n\\n, \\n, space) to preserve semantic cohesion."
+                },
+                "embeddings": {
+                    "name": "OllamaEmbeddings",
+                    "model": EMBED_MODEL,
+                    "base_url": OLLAMA_BASE_URL,
+                    "description": f"Computes dense vector representations using {EMBED_MODEL} model on local Ollama server."
+                },
+                "vector_store": {
+                    "name": "Chroma",
+                    "collection": COLLECTION_NAME,
+                    "directory": CHROMA_DB_DIR,
+                    "description": "An open-source embedding database. Chroma stores documents and vectors for ultra-fast semantic similarity retrieval."
+                }
+            }
         }
 
-    def query(self, question: str, k: int = 4) -> Dict[str, Any]:
-        """Queries the vector store and uses Ollama to answer based on context."""
+    def query(self, question: str, k: int = 4, temperature: float = 0.0) -> Dict[str, Any]:
+        """Queries the vector store and uses proper LangChain LCEL pipeline with ChatOllama to answer."""
         if not self.db:
             return {"error": "Vector database not initialized."}
             
-        # Perform similarity search with dynamic K
+        # 1. Retrieve top K documents
         retriever = self.db.as_retriever(search_kwargs={"k": k})
         relevant_docs = retriever.invoke(question)
         
-        # Extract content & sources
+        # Extract sources
         sources = []
         context_parts = []
         for doc in relevant_docs:
@@ -87,13 +112,7 @@ class RAGManager:
             
         context = "\n\n---\n\n".join(context_parts)
         
-        # 4. Generate answer using Ollama LLM
-        llm = Ollama(
-            model=LLM_MODEL,
-            base_url=OLLAMA_BASE_URL,
-            temperature=0.0
-        )
-        
+        # 2. Setup proper LangChain abstractions
         prompt_template = """You are a professional legal and document assistant. Use the following pieces of context to answer the question at the end.
 If you don't know the answer based on the context provided, just say that the information is not present in the document. Do not try to make up an answer.
 Keep your response structured, precise, and professional.
@@ -105,17 +124,56 @@ Question: {question}
 
 Answer:"""
         
-        prompt = PromptTemplate(
-            template=prompt_template,
-            input_variables=["context", "question"]
+        prompt = ChatPromptTemplate.from_template(prompt_template)
+        
+        # ChatModel
+        chat_model = ChatOllama(
+            model=LLM_MODEL,
+            base_url=OLLAMA_BASE_URL,
+            temperature=temperature
         )
         
-        formatted_prompt = prompt.format(context=context, question=question)
-        answer = llm.invoke(formatted_prompt)
+        # Output parser
+        output_parser = StrOutputParser()
+        
+        # LCEL Chain
+        chain = prompt | chat_model | output_parser
+        
+        # Generate output using the LCEL chain
+        answer = chain.invoke({"context": context, "question": question})
+        
+        # Compile formatted prompt for visual inspection
+        formatted_prompt_messages = prompt.format_messages(context=context, question=question)
+        formatted_prompt_str = "\n".join([f"{msg.type.upper()}: {msg.content}" for msg in formatted_prompt_messages])
         
         return {
             "answer": answer.strip(),
-            "sources": sources
+            "sources": sources,
+            "pipeline": {
+                "retriever": {
+                    "name": "VectorStoreRetriever",
+                    "search_type": "similarity",
+                    "k": k,
+                    "description": "Queries the Chroma vector index using cosine similarity to fetch the most relevant content segments."
+                },
+                "prompt": {
+                    "name": "ChatPromptTemplate",
+                    "template": prompt_template,
+                    "formatted_prompt": formatted_prompt_str,
+                    "description": "Constructs a structured ChatPromptTemplate injecting local source context and the user query."
+                },
+                "chat_model": {
+                    "name": "ChatOllama",
+                    "model": LLM_MODEL,
+                    "temperature": temperature,
+                    "base_url": OLLAMA_BASE_URL,
+                    "description": f"LangChain ChatModel driving generative reasoning via {LLM_MODEL} at temperature {temperature}."
+                },
+                "output_parser": {
+                    "name": "StrOutputParser",
+                    "description": "Processes the chat response message object, extracting the clean text content stream seamlessly."
+                }
+            }
         }
 
     def get_ingested_documents(self) -> List[str]:

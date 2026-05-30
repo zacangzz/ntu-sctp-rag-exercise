@@ -2,6 +2,8 @@ import os
 import shutil
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from backend.rag_service import RAGManager
 
@@ -26,6 +28,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 class QueryRequest(BaseModel):
     question: str
     k: int = 4
+    temperature: float = 0.0
 
 @app.post("/api/ingest")
 async def ingest_document(
@@ -64,7 +67,8 @@ async def ask_question(request: QueryRequest):
     try:
         result = rag_manager.query(
             question=request.question,
-            k=request.k
+            k=request.k,
+            temperature=request.temperature
         )
         return result
     except Exception as e:
@@ -88,3 +92,31 @@ async def reset_documents():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# =====================================================================
+# Serve Frontend Static Assets (Full-Stack single port serving)
+# =====================================================================
+FRONTEND_DIR = "./frontend/dist"
+if os.path.exists(FRONTEND_DIR):
+    assets_dir = os.path.join(FRONTEND_DIR, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{catchall:path}")
+    async def serve_frontend(catchall: str):
+        # Ignore API calls to let FastAPI router handle 404s
+        if catchall.startswith("api"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        
+        # If the requested path exists as a static file under frontend/dist, serve it directly!
+        file_path = os.path.join(FRONTEND_DIR, catchall)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        index_path = os.path.join(FRONTEND_DIR, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        raise HTTPException(
+            status_code=404, 
+            detail="Frontend index.html not found. Run 'npm run build' inside frontend/ directory first."
+        )

@@ -134,6 +134,31 @@ The frontend is a lightweight React client built on Vite.
    ```
    The React application will launch, typically at **`http://localhost:5173`**. Open this URL in your browser to interact with the UI!
 
+### Step 4: Run the Full Stack via Uvicorn (Single Terminal / Single Port) ⚡
+
+FastAPI is configured to serve your React frontend static files. This allows you to run, test, and deploy both the API backend and the React UI client on a **single port** (typically `8000`) without running separate dev terminals.
+
+#### Option A: Use the Automated Shell Script (Recommended) 🚀
+We provided an interactive script in `scripts/run_fullstack.sh` that automatically checks your environment, installs node dependencies, compiles your frontend assets, resolves any port conflicts, and boots the Uvicorn server in a single command:
+```bash
+./scripts/run_fullstack.sh
+```
+*Note: To skip the React build on subsequent launches and boot instantly, run: `./scripts/run_fullstack.sh --skip-build`*
+
+#### Option B: Manual Setup
+If you prefer running commands manually:
+1. **Build the React frontend static assets**:
+   ```bash
+   cd frontend
+   npm run build
+   cd ..
+   ```
+2. **Start the unified Uvicorn server**:
+   ```bash
+   uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+Both the React UI client and your FastAPI endpoints `/api/...` will run together at **`http://localhost:8000`**.
+
 ---
 
 ## 💡 How to Use the Application
@@ -189,4 +214,6 @@ Once both servers are running, open the web app to explore the RAG loop:
 | **Run API Backend** | `/` | `uv run main.py` |
 | **Install UI Deps** | `/frontend` | `npm install` |
 | **Run UI Frontend** | `/frontend` | `npm run dev` |
+| **Build Frontend UI** | `/frontend` | `npm run build` |
+| **Run Full Stack Server** | `/` | `uv run uvicorn backend.main:app --reload` |
 

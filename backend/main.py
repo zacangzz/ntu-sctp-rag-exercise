@@ -29,6 +29,7 @@ class QueryRequest(BaseModel):
     question: str
     k: int = 4
     temperature: float = 0.0
+    retrieval_mode: str = "vector"  # "vector" | "bm25" | "hybrid"
 
 @app.post("/api/ingest")
 async def ingest_document(
@@ -61,14 +62,15 @@ async def ingest_document(
 
 @app.post("/api/ask")
 async def ask_question(request: QueryRequest):
-    """Executes similarity search on ChromaDB and queries Gemma 4 for answer."""
+    """Executes retrieval (Vector / BM25 / Hybrid) on ChromaDB and queries Gemma 4 for answer."""
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
     try:
         result = rag_manager.query(
             question=request.question,
             k=request.k,
-            temperature=request.temperature
+            temperature=request.temperature,
+            retrieval_mode=request.retrieval_mode
         )
         return result
     except Exception as e:
@@ -90,6 +92,29 @@ async def reset_documents():
     try:
         result = rag_manager.reset_db()
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+from backend.trace_service import TraceService
+
+@app.get("/api/traces")
+async def get_traces():
+    """Fetches aggregated chronological execution traces from local logs."""
+    try:
+        traces = TraceService.get_traces()
+        return {"traces": traces}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/traces")
+async def clear_traces():
+    """Clears all historical trace logs on backend disk."""
+    try:
+        success = TraceService.clear_traces()
+        if success:
+            return {"status": "success", "message": "All traces cleared."}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to clear logs.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

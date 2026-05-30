@@ -87,6 +87,8 @@ def test_query_success(test_rag_manager):
     assert len(response["sources"]) == 2
     assert response["sources"][0]["content"] == "NTU SCTP stands for Singapore Certified Training Programme."
     assert response["sources"][0]["metadata"]["source"] == "ntu_info.txt"
+    assert "score" in response["sources"][0]
+    assert response["sources"][0]["score"] == 0.15
     assert response["pipeline"]["chat_model"]["name"] == "ChatOllama"
 
 def test_get_ingested_documents(test_rag_manager):
@@ -110,3 +112,20 @@ def test_reset_db(test_rag_manager):
     reset_res = test_rag_manager.reset_db()
     assert reset_res["status"] == "success"
     assert len(test_rag_manager.db.documents) == 0
+
+def test_query_no_context(test_rag_manager):
+    """Tests querying when the database has no documents, verifying the system's resilience."""
+    # Ensure database is empty
+    test_rag_manager.db.delete_collection()
+
+    from tests.conftest import mock_chat_ollama
+    mock_response = AIMessage(content="I'm sorry, but the requested information is not present in the ingested documents.")
+    mock_chat_ollama.invoke.return_value = mock_response
+    mock_chat_ollama.return_value = mock_response
+
+    response = test_rag_manager.query(question="What is Quantum Physics?", k=2, temperature=0.0)
+
+    assert "answer" in response
+    assert response["answer"] == "I'm sorry, but the requested information is not present in the ingested documents."
+    assert len(response["sources"]) == 0
+

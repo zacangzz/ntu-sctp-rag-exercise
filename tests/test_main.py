@@ -127,3 +127,26 @@ def test_frontend_catchall_file_exists(client):
         # Verify that it serves index.html
         args, kwargs = MockFileResponse.call_args
         assert "index.html" in args[0]
+
+def test_api_get_traces(client):
+    """Tests GET /api/traces to retrieve aggregated chronological traces."""
+    from tests.conftest import mock_trace_service
+    mock_trace_service.get_traces.return_value = [
+        {"id": "t1", "timestamp": "2026-05-30T10:00:00Z", "type": "query", "duration_ms": 120.0, "metadata": {}}
+    ]
+    response = client.get("/api/traces")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["traces"]) == 1
+    assert data["traces"][0]["id"] == "t1"
+
+def test_api_clear_traces(client):
+    """Tests DELETE /api/traces to clear all trace files."""
+    from tests.conftest import mock_trace_service
+    mock_trace_service.clear_traces.return_value = True
+    response = client.delete("/api/traces")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["message"] == "All traces cleared."
+

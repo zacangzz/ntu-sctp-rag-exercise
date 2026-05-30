@@ -79,7 +79,12 @@ export default function IngestView({ chunkSize, chunkOverlap, documents, setDocu
 
       const data = await response.json();
       setSuccessMsg(`"${data.filename}" processed successfully! Created ${data.num_chunks} chunks using Chunk Size: ${data.chunk_size}.`);
-      setPipelineData(data.pipeline);
+      setPipelineData({
+        ...data.pipeline,
+        filename: data.filename,
+        num_chunks: data.num_chunks,
+        num_pages: data.num_pages
+      });
       refreshDocuments();
     } catch (err) {
       console.error(err);
@@ -397,11 +402,17 @@ export default function IngestView({ chunkSize, chunkOverlap, documents, setDocu
                 <div className="step-telemetry" style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
                     <span className="telemetry-label">Model:</span>
-                    <span className="telemetry-value font-mono text-cyan" style={{ fontSize: '0.8rem' }}>nomic-embed-text</span>
+                    <span className="telemetry-value font-mono text-cyan" style={{ fontSize: '0.8rem' }}>
+                      {pipelineData ? pipelineData.embeddings.model : 'embeddinggemma'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
                     <span className="telemetry-label">Dimensions:</span>
-                    <span className="telemetry-value font-mono">768</span>
+                    <span className="telemetry-value font-mono">
+                      {pipelineData 
+                        ? (pipelineData.embeddings.model.includes('gemma') ? '1280' : '768') 
+                        : '1280'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0' }}>
                     <span className="telemetry-label">Ollama Host:</span>

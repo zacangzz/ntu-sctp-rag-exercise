@@ -28,6 +28,10 @@ class MockChroma:
         mock_retriever.invoke = MagicMock(side_effect=lambda q: self.documents[:k])
         return mock_retriever
 
+    def similarity_search_with_score(self, query, k=4):
+        # Return a list of (Document, score) tuples
+        return [(doc, 0.15) for doc in self.documents[:k]]
+
     def get(self):
         # Standard chroma get returns a dict with 'metadatas' list
         metadatas = [doc.metadata for doc in self.documents]
@@ -39,15 +43,24 @@ class MockChroma:
 # Mock ChatOllama as a generic runnable chain component
 mock_chat_ollama = MagicMock()
 
+# Mock TraceService completely to avoid disk operations in unit tests
+mock_trace_service = MagicMock()
+mock_trace_service.get_traces.return_value = []
+mock_trace_service.clear_traces.return_value = True
+
 # Setup patchers
 embeddings_patcher = patch("backend.rag_service.OllamaEmbeddings", return_value=mock_embeddings)
 chroma_patcher = patch("backend.rag_service.Chroma", side_effect=MockChroma)
 chat_ollama_patcher = patch("backend.rag_service.ChatOllama", return_value=mock_chat_ollama)
+trace_service_rag_patcher = patch("backend.rag_service.TraceService", mock_trace_service)
+trace_service_main_patcher = patch("backend.main.TraceService", mock_trace_service)
 
 # Start patches
 embeddings_patcher.start()
 chroma_patcher.start()
 chat_ollama_patcher.start()
+trace_service_rag_patcher.start()
+trace_service_main_patcher.start()
 
 # Now import RAGManager and FastAPI app safely without triggering real network/Chroma initialization
 from backend.rag_service import RAGManager
@@ -59,6 +72,10 @@ def clean_mock_state():
     """Resets mock counts and clears any stored documents in the mock Chroma DB."""
     mock_embeddings.reset_mock()
     mock_chat_ollama.reset_mock()
+    mock_trace_service.reset_mock()
+    # Configure mock responses for tests
+    mock_trace_service.get_traces.return_value = []
+    mock_trace_service.clear_traces.return_value = True
     if rag_manager.db:
         rag_manager.db.delete_collection()
     yield

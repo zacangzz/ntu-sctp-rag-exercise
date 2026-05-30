@@ -7,10 +7,10 @@ export default function Navbar({ view, setView }) {
         <div className="brand-icon">
           {/* Futuristic layers SVG icon */}
           <svg viewBox="0 0 24 24">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--on-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
-        <span className="brand-title">Classical RAG</span>
+        <span className="brand-title">Lumina Lab</span>
       </div>
       
       <nav style={{ flex: 1 }}>
@@ -41,6 +41,20 @@ export default function Navbar({ view, setView }) {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <span>Ask Assistant</span>
+            </button>
+          </li>
+
+          <li className="nav-item">
+            <button 
+              className={`nav-button ${view === 'traces' ? 'active' : ''}`}
+              onClick={() => setView('traces')}
+            >
+              {/* Search History / activity icon */}
+              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span>Trace Explorer</span>
             </button>
           </li>
         </ul>

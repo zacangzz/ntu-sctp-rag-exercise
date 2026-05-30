@@ -13,7 +13,7 @@ graph TD
     User([User]) <--> |Ingest & Query| Frontend[React + Vite Frontend]
     Frontend <--> |HTTP API :8000| Backend[FastAPI Server]
     Backend --> |Document Loaders & Splitters| LangChain[LangChain Pipeline]
-    LangChain --> |Local Nominc Embeddings| Ollama[Ollama Server]
+    LangChain --> |Local Gemma Embeddings| Ollama[Ollama Server]
     LangChain <--> |Vector Index| ChromaDB[(ChromaDB Vector Store)]
     LangChain --> |Legal Prompt + Context| LLM[Gemma 4 LLM via Ollama]
 ```
@@ -43,8 +43,8 @@ Follow these steps to get both the backend and frontend up and running locally.
    ```
 3. Pull the required models (an embedding model and the generation LLM):
    ```bash
-   # Pull the Nomnic Text Embedding model
-   ollama pull nomic-embed-text
+   # Pull the Gemma Text Embedding model
+   ollama pull embeddinggemma
 
    # Pull the Gemma 4 LLM model
    ollama pull gemma4:e4b
@@ -204,7 +204,7 @@ Once both servers are running, open the web app to explore the RAG loop:
 | Process | Directory | Command |
 | :--- | :--- | :--- |
 | **Start Ollama** | Any | `ollama serve` |
-| **Pull Embedding Model** | Any | `ollama pull nomic-embed-text` |
+| **Pull Embedding Model** | Any | `ollama pull embeddinggemma` |
 | **Pull LLM Model** | Any | `ollama pull gemma4:e4b` |
 | **Create Python Venv** | `/` | `uv venv --python 3.13` |
 | **Activate Python Venv (Mac/Linux)** | `/` | `source .venv/bin/activate` |
